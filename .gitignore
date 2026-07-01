@@ -1,0 +1,9 @@
+#.GITIGNORE
+# MAIN FILES
+.venv/
+
+#PYTHON CACHE AND IDE FILES
+__pycache__/
+*.py[cod]
+*$py.class
+.idea/
