@@ -4,6 +4,7 @@ from core.models.metrics import FilterMetrics, AxisMetrics
 from core.models.recommendations import PIDRecommendation, FilterRecommendation
 from core.models.analysis import AnalysisResult
 from core.fft_analyzer import FFTAnalyzer
+from core.pid_analyzer import PIDAnalyzer
 
 
 class TuningEngine:
@@ -106,24 +107,32 @@ class TuningEngine:
                     "Software filtering is ineffective. Immediate hardware inspection required."
                 )
 
-        dummy_axis_metrics = {
-            axis: AxisMetrics(
-                axis_name=axis,
-                overshoot_percents=0.0,
-                rise_time_seconds=0.0,
-                settling_time_seconds=0.0,
-                steady_state_error=0.0,
-                oscillation_is_detected=False,
-                oscillation_frequency=0.0,
-                p_part="OK",
-                i_part="OK",
-                d_part="OK"
-            ) for axis in axes.keys()
+        pid_analyzer = PIDAnalyzer()
+
+        axis_metrics = {
+            "Roll": pid_analyzer.analyze_axis(
+                "Roll",
+                flight_data.setpoint_roll,
+                flight_data.gyro_roll,
+                flight_data.timestamp,
+            ),
+            "Pitch": pid_analyzer.analyze_axis(
+                "Pitch",
+                flight_data.setpoint_pitch,
+                flight_data.gyro_pitch,
+                flight_data.timestamp,
+            ),
+            "Yaw": pid_analyzer.analyze_axis(
+                "Yaw",
+                flight_data.setpoint_yaw,
+                flight_data.gyro_yaw,
+                flight_data.timestamp,
+            ),
         }
 
         return AnalysisResult(
             flight_data=flight_data,
-            axis_metrics=dummy_axis_metrics,
+            axis_metrics=axis_metrics,
             filter_metrics=filter_metrics_dict,
             overall_quality_score=85.0 if "CRITICAL" not in global_assessment else 20.0,
             overall_assessment=global_assessment,
