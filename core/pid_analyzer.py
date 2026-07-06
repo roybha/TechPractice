@@ -29,13 +29,41 @@ class PIDAnalyzer:
                   Low-frequency (<15 Hz)  = P too high.
     """
     # thresholds, that can be tuned
-    STEP_THRESHOLD = 0.5 # deg/s min change to count a step
-    MIN_STEP_SEPARATION = 50 # difference between two different steps
-    ANALYSIS_WINDOW_SECONDS = 3.0 # seconds of response to examine after each step
+    STEP_THRESHOLD = 50.0 # setpoint is in deg/s change to count a step
+    MIN_STEP_GAP_SECONDS = 0.05 # difference between two different steps
+    ANALYSIS_WINDOW_SECONDS = 0.5 # seconds of response to examine after each step
     OVERSHOOT_OK = 0.10 # 10%
     OVERSHOOT_WARNING = 0.20 # 20%
-    SETTLING_OK_SECONDS = 0.5
-    SETTLING_WARNING_SECONDS = 1.0
+    SETTLING_OK_SECONDS = 0.15 # 150 ms
+    SETTLING_WARNING_SECONDS = 0.30 # 300 ms
     STEADY_OK = 0.02 # 2%
     STEADY_WARNING = 0.05 # 5%
-    OSCILLATION_SNR = 5.0 # peak must be Nx above mean PSD to count
+    OSCILLATION_SNR = 5.0 # peak must be Nx above mean PSD to count\
+
+    # betaflight oscillation bands (deg/s units, high sample rate)
+    P_OSC_FREQ_MAX = 50.0  # below this - P-induced oscillation
+    D_OSC_FREQ_MIN = 50.0  # above this - D-induced / needs filter
+
+    # ignore pilot input frequencies (below this = not an oscillation)
+    MIN_OSC_FREQ = 10.0
+
+
+def _get_data(self, timestamp: np.ndarray) -> float:
+    """
+    Returns sample period in seconds.
+
+    Betaflight Blackbox always writes "time (us)" in microseconds.
+    Example: first row ≈ 0, second row ≈ 250 (at 4 kHz loop).
+    """
+    raw_data = float(np.mean(np.diff(timestamp)))
+
+    # microseconds is a typical Betaflight value: 125–500 µs per sample
+    if raw_data > 100:
+        return raw_data / 1_000_000.0
+
+    # milliseconds (unlikely for Betaflight)
+    if raw_data > 0.1:
+        return raw_data / 1_000.0
+
+    # already seconds
+    return raw_data
