@@ -49,12 +49,7 @@ class PIDAnalyzer:
 
 
 def _get_data(self, timestamp: np.ndarray) -> float:
-    """
-    Returns sample period in seconds.
-
-    Betaflight Blackbox always writes "time (us)" in microseconds.
-    Example: first row ≈ 0, second row ≈ 250 (at 4 kHz loop).
-    """
+    """Converts any timestamp unit to seconds per sample."""
     raw_data = float(np.mean(np.diff(timestamp)))
 
     # microseconds is a typical Betaflight value: 125–500 µs per sample
@@ -67,3 +62,21 @@ def _get_data(self, timestamp: np.ndarray) -> float:
 
     # already seconds
     return raw_data
+
+
+def _find_steps(self, setpoint: np.ndarray, fs: float) -> list[int]:
+    """Returns indices where the stick input changes sharply."""
+    diff = np.abs(np.diff(setpoint))
+    raw_indices = np.where(diff > self.STEP_THRESHOLD)[0]
+
+    if len(raw_indices) == 0:
+        return []
+
+    min_gap_samples = int(self.MIN_STEP_GAP_SEC * fs)
+
+    filtered = [int(raw_indices[0])]
+    for idx in raw_indices[1:]:
+        if idx - filtered[-1] > min_gap_samples:
+            filtered.append(int(idx))
+
+    return filtered
