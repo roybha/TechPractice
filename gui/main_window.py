@@ -1,7 +1,8 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QVBoxLayout, QWidget, QLabel, QSplitter
+from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QVBoxLayout, QWidget, QLabel, QSplitter, QFileDialog, QApplication
 from core.log_parser import LogParser
 from core.tuning_engine import TuningEngine
+from gui.style import AppStyles
 from gui.widgets.profile_widget import ProfileWidget
 
 
@@ -52,10 +53,44 @@ class MainWindow(QMainWindow):
         root_layout.addWidget(right_layout_widget,stretch=3)
 
     def _connect_signals(self):
-        self.profile_widget.load_btn.clicked.connect()
-        pass
+        self.profile_widget.load_btn.clicked.connect(self._on_load_clicked)
 
     def _on_load_clicked(self):
-        pass
-    def _set_status(self, tex: str, color: str):
-        pass
+        filepath, _ = QFileDialog.getOpenFileName(
+            self, "Select Blackbox Log", "",
+            "CSV Files (*.csv);;All Files (*)"
+        )
+        if not filepath:
+            return
+
+        self._set_status("ANALYZING...", AppStyles.AMBER)
+        self.console_widget.clear()
+        self.console_widget.log(f"[SYSTEM] Loading: {filepath}")
+        QApplication.processEvents()
+
+        try:
+            profile = self.profile_widget.get_profile()
+            flight_data = self._parser.parse(filepath)
+            result = self._engine.analyze(flight_data, profile)
+
+            self.plot_widget.plot_all(flight_data)
+            self.console_widget.display_result(result)
+
+            self._set_status("ANALYSIS COMPLETE", AppStyles.GREEN)
+
+        except FileNotFoundError as e:
+            self._handle_error(f"File not found: {e}")
+        except ValueError as e:
+            self._handle_error(f"Parse error: {e}")
+        except Exception as e:
+            self._handle_error(f"Unexpected error: {e}")
+
+    def _set_status(self, text: str, color: str):
+        self.status_label.setText(text)
+        self.status_label.setStyleSheet(
+            f"color: {color}; border-color: {color};"
+        )
+
+    def _handle_error(self, message: str):
+        self.console_widget.log(f"\n[ERROR] {message}")
+        self._set_status("ANALYSIS FAILED", AppStyles.RED)
