@@ -1,3 +1,18 @@
+class AppStyles:
+
+    BG_DARK    = "#121212"
+    BG_WIDGET  = "#1E1E1E"
+    BG_PLOT    = "#050505"
+    GREEN      = "#00FF41"   # active elements
+    AMBER      = "#FFB000"   #  actual plot
+    RED        = "#FF003C"   # error plot
+    TEXT       = "#E0E0E0"
+    BORDER     = "#333333"
+
+    @staticmethod
+    def get_stylesheet() -> str:
+        return DARK_THEME
+
 DARK_THEME = """
     QMainWindow { background-color: #121212; }
     QLabel { color: #E0E0E0; font-family: 'Segoe UI'; font-weight: bold; }
