@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-from models import FlightData
+from core.models.flight import FlightData
 
 class LogParser:
     def __init__(self):
