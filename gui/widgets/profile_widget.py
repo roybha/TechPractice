@@ -49,8 +49,6 @@ class ProfileWidget(QWidget):
 
         layout.addStretch()
 
-
-
     def get_profile(self):
         return DroneProfile(
             weight_grams=self.weight_input.value(),
