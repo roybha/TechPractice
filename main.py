@@ -1,9 +1,8 @@
 import sys
 import matplotlib
+matplotlib.use('QT5Agg')
 from gui.main_window import MainWindow
 from gui.style import AppStyles
-
-matplotlib.use('QT5Agg')
 
 from PyQt5.QtWidgets import QApplication
 

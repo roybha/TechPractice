@@ -11,7 +11,7 @@ class ProfileWidget(QWidget):
         self._build_ui()
 
     def _build_ui(self):
-        layout = QVBoxLayout()
+        layout = QVBoxLayout(self)
 
         group = QGroupBox("DRONE CONFIGURATION")
         group_layout = QVBoxLayout()
@@ -44,14 +44,14 @@ class ProfileWidget(QWidget):
         layout.addWidget(group)
 
         self.load_button = QPushButton("LOAD LOG (.CSV)")
-        self.load_btn.setObjectName("actionButton")
-        layout.addWidget(self.load_btn)
+        self.load_button.setObjectName("actionButton")
+        layout.addWidget(self.load_button)
 
         layout.addStretch()
 
     def get_profile(self):
         return DroneProfile(
             weight_grams=self.weight_input.value(),
-            prop_size_inches=self.prop_size_input.value(),
-            motor_kv=self.motor_kv_input.value(),
+            prop_size_inches=self.prop_input.value(),
+            motor_kv=self.kv_input.value(),
         )

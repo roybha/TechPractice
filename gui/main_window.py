@@ -3,6 +3,8 @@ from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QVBoxLayout, QWidget, QLab
 from core.log_parser import LogParser
 from core.tuning_engine import TuningEngine
 from gui.style import AppStyles
+from gui.widgets.console_widget import ConsoleWidget
+from gui.widgets.plot_widget import PlotWidget
 from gui.widgets.profile_widget import ProfileWidget
 
 
@@ -43,8 +45,8 @@ class MainWindow(QMainWindow):
 
         # Splitter: plots above, console below
         splitter = QSplitter(Qt.Vertical)
-        self.plot_widget = None
-        self.console_widget = None
+        self.plot_widget = PlotWidget()
+        self.console_widget = ConsoleWidget()
         splitter.addWidget(self.plot_widget)
         splitter.addWidget(self.console_widget)
         splitter.setSizes([560, 280])
@@ -53,7 +55,7 @@ class MainWindow(QMainWindow):
         root_layout.addWidget(right_layout_widget,stretch=3)
 
     def _connect_signals(self):
-        self.profile_widget.load_btn.clicked.connect(self._on_load_clicked)
+        self.profile_widget.load_button.clicked.connect(self._on_load_clicked)
 
     def _on_load_clicked(self):
         filepath, _ = QFileDialog.getOpenFileName(

@@ -66,3 +66,6 @@ class ConsoleWidget(QWidget):
                      f"D: {rec.d_percent_change:+.0f}%")
             for r in rec.reasoning:
                 self.log(f"  → {r}")
+
+    def clear(self):
+        self.console.clear()

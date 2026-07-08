@@ -7,10 +7,11 @@ from gui.style import AppStyles
 class MplCanvas(FigureCanvasQTAgg):
     def __init__(self, parent=None):
         self.fig = Figure(facecolor=AppStyles.BG_DARK)
-        self.ax = self.fig.add_subplot(211)
+        self.ax_top = self.fig.add_subplot(211)
         self.ax_bottom = self.fig.add_subplot(212)
         self.fig.subplots_adjust(hspace=0.45)
         super().__init__(self.fig)
+        self._style_axes()
 
     def _style_axes(self):
         for ax in [self.ax_top, self.ax_bottom]:
@@ -23,4 +24,6 @@ class MplCanvas(FigureCanvasQTAgg):
                 spine.set_color(AppStyles.BORDER)
 
     def clear_and_restyle(self):
-        pass
+        self.ax_top.clear()
+        self.ax_bottom.clear()
+        self._style_axes()
