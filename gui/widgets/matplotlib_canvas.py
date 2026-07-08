@@ -13,7 +13,14 @@ class MplCanvas(FigureCanvasQTAgg):
         super().__init__(self.fig)
 
     def _style_axes(self):
-        pass
+        for ax in [self.ax_top, self.ax_bottom]:
+            ax.set_facecolor(AppStyles.BG_PLOT)
+            ax.tick_params(colors=AppStyles.TEXT)
+            ax.xaxis.label.set_color(AppStyles.TEXT)
+            ax.yaxis.label.set_color(AppStyles.TEXT)
+            ax.title.set_color(AppStyles.TEXT)
+            for spine in ax.spines.values():
+                spine.set_color(AppStyles.BORDER)
 
     def clear_and_restyle(self):
         pass
