@@ -10,22 +10,43 @@ class PIDRecommendation:
     d_current: float
 
     # Recommended % (can be negative)
-    p_percent_change: float
-    i_percent_change: float
-    d_percent_change: float
+    p_percent_change: float = 0.0
+    i_percent_change: float = 0.0
+    d_percent_change: float = 0.0
 
     # Recommended absolute data
-    p_recommended: float
-    i_recommended: float
-    d_recommended: float
+    p_recommended: float = 0.0
+    i_recommended: float = 0.0
+    d_recommended: float = 0.0
 
     reasoning: list[str] = field(default_factory=list)
     part_change_priority: str = "P"
+    feedforward_current: float = 0.0
+    feedforward_recommended: float = 0.0
 
 
 @dataclass
 class FilterRecommendation:
-    recommended_lpf_cutoff: float
-    recommended_notch_center: float
-    recommended_notch_bandwidth: float
+    # Gyro LowPass (Dynamic)
+    gyro_lpf_min_hz: float
+    gyro_lpf_max_hz: float
+
+    # Gyro Notch Filters
+    gyro_notch1_center_hz: float  # gyro NF 1 center Frequency
+    gyro_notch1_cutoff_hz: float  # gyro NF 1 cutoff Frequency
+    gyro_notch2_center_hz: float  # gyro NF 2 center Frequency
+    gyro_notch2_cutoff_hz: float  # gyro NF 2 cutoff Frequency
+
+    # RPM Filter
+    rpm_filter_harmonics: int # number of harmonics (1-3, usually 3)
+    rpm_filter_min_hz: float  # min frequency to apply RPM filter
+
+    # D-Term Lowpass
+    dterm_lpf1_min_hz: float  # D Term Lowpass 1 dynamic min cutoff
+    dterm_lpf1_max_hz: float  # D Term Lowpass 1 dynamic max cutoff
+    dterm_lpf2_hz: float  # D Term Lowpass 2 static cutoff
+
+    # Yaw Lowpass
+    yaw_lpf_hz: float  # Yaw Lowpass cutoff
+
     reasoning: list[str] = field(default_factory=list)
