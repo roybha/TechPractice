@@ -75,15 +75,15 @@ class ConsoleWidget(QWidget):
             return
 
         self.log("─" * 64)
-        self.log("  FILTER  RECOMMENDATIONS ")
+        self.log("  FILTER RECOMMENDATIONS)")
         self.log("─" * 64)
 
-        self.log("\n  ● GYRO LOWPASS (Dynamic):")
+        self.log("\n  GYRO LOWPASS (Dynamic):")
         self.log(f"    Gyro LPF1 Dynamic Min Cutoff : {fr.gyro_lpf_min_hz:.0f} Hz")
         self.log(f"    Gyro LPF1 Dynamic Max Cutoff : {fr.gyro_lpf_max_hz:.0f} Hz")
 
         if fr.gyro_notch1_center_hz > 0:
-            self.log("\n  ● GYRO NOTCH FILTERS:")
+            self.log("\n  GYRO NOTCH FILTERS:")
             self.log(f"    Notch 1 Center  : {fr.gyro_notch1_center_hz:.0f} Hz")
             self.log(f"    Notch 1 Cutoff  : {fr.gyro_notch1_cutoff_hz:.0f} Hz")
         if fr.gyro_notch2_center_hz > 0:
@@ -93,12 +93,6 @@ class ConsoleWidget(QWidget):
         self.log("\n  RPM FILTER  (most effective — enable this first):")
         self.log(f"    Harmonics       : {fr.rpm_filter_harmonics}")
         self.log(f"    Min Frequency   : {fr.rpm_filter_min_hz:.0f} Hz")
-
-        self.log("\n  DYNAMIC NOTCH FILTER:")
-        self.log(f"    Width Percent   : {fr.dyn_notch_width_pct} %")
-        self.log(f"    Q               : {fr.dyn_notch_q}")
-        self.log(f"    Min Hz          : {fr.dyn_notch_min_hz:.0f} Hz")
-        self.log(f"    Max Hz          : {fr.dyn_notch_max_hz:.0f} Hz")
 
         self.log("\n  D-TERM LOWPASS:")
         self.log(f"    LPF1 Dyn Min    : {fr.dterm_lpf1_min_hz:.0f} Hz")
