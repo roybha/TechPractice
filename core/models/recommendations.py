@@ -41,6 +41,12 @@ class FilterRecommendation:
     rpm_filter_harmonics: int # number of harmonics (1-3, usually 3)
     rpm_filter_min_hz: float  # min frequency to apply RPM filter
 
+    # ── Dynamic Notch Filter ─────────────────────────────────────────
+    dyn_notch_width_pct: int  # 0=auto, 8=typical manual
+    dyn_notch_q: int  # 250=wide, 350=narrow
+    dyn_notch_min_hz: float  # lower search bound
+    dyn_notch_max_hz: float  # upper search bound
+
     # D-Term Lowpass
     dterm_lpf1_min_hz: float  # D Term Lowpass 1 dynamic min cutoff
     dterm_lpf1_max_hz: float  # D Term Lowpass 1 dynamic max cutoff

@@ -6,8 +6,60 @@ from core.models.analysis import AnalysisResult
 from core.fft_analyzer import FFTAnalyzer
 from core.pid_analyzer import PIDAnalyzer
 
-
+_SIZE_CLASSES = [
+    # 15" ultra-heavy (>7 kg) — large payload UAVs
+    {
+        "label": "15\" Ultra-Heavy (>7 kg)",
+        "prop_min": 15.0, "weight_min": 7000,
+        "Roll":  {"P": 16, "I": 40, "D": 70, "FF": 0},
+        "Pitch": {"P": 18, "I": 45, "D": 76, "FF": 0},
+        "Yaw":   {"P": 20, "I": 38, "D":  0, "FF": 65},
+    },
+    # 13" heavy (5–7 kg)
+    {
+        "label": "13\" Heavy (5–7 kg)",
+        "prop_min": 13.0, "weight_min": 5000,
+        "Roll":  {"P": 22, "I": 52, "D": 60, "FF": 0},
+        "Pitch": {"P": 24, "I": 57, "D": 65, "FF": 0},
+        "Yaw":   {"P": 25, "I": 48, "D":  0, "FF": 60},
+    },
+    # 10" medium-heavy (3–5 kg)
+    {
+        "label": "10\" Medium-Heavy (3–5 kg)",
+        "prop_min": 10.0, "weight_min": 3000,
+        "Roll":  {"P": 28, "I": 60, "D": 52, "FF": 0},
+        "Pitch": {"P": 30, "I": 65, "D": 56, "FF": 0},
+        "Yaw":   {"P": 30, "I": 55, "D":  0, "FF": 55},
+    },
+    # 7–10" medium (1.5–3 kg)
+    {
+        "label": "7–10\" Medium (1.5–3 kg)",
+        "prop_min": 7.0, "weight_min": 1500,
+        "Roll":  {"P": 38, "I": 72, "D": 42, "FF": 0},
+        "Pitch": {"P": 40, "I": 78, "D": 46, "FF": 0},
+        "Yaw":   {"P": 38, "I": 68, "D":  0, "FF": 40},
+    },
+    # 5–7" standard (<1.5 kg)
+    {
+        "label": "5–7\" Standard (<1.5 kg)",
+        "prop_min": 0.0, "weight_min": 0,
+        "Roll":  {"P": 45, "I": 80, "D": 35, "FF": 0},
+        "Pitch": {"P": 47, "I": 85, "D": 38, "FF": 0},
+        "Yaw":   {"P": 45, "I": 80, "D":  0, "FF": 0},
+    },
+]
 class TuningEngine:
+    def _get_size_class(self, profile: DroneProfile) -> dict:
+        """
+        Matches drone to size class by BOTH prop size AND weight.
+        Both conditions must be met — prevents misclassification
+        (e.g. a light 10" shouldn't be treated as heavy 13").
+        """
+        for cls in _SIZE_CLASSES:
+            if (profile.prop_size_inches >= cls["prop_min"] and
+                    profile.weight_grams >= cls["weight_min"]):
+                return cls
+        return _SIZE_CLASSES[-1]  # fallback: smallest class
 
     def _calculate_filters(self, metrics: FilterMetrics) -> FilterRecommendation:
         reasoning = []
