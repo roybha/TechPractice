@@ -115,46 +115,62 @@ class TuningEngine:
             reasoning=log,
         )
 
-    def _calculate_pids(self, axis_name: str, profile: DroneProfile) -> PIDRecommendation:
-        reasoning = []
-        p_change, i_change, d_change = 0.0, 0.0, 0.0
+    @staticmethod
+    def _adjust_d(d: float, metrics: AxisMetrics, log: list) -> float:
+        pass
 
-        # ultra heavy platforms (13-15 inches, >7kg total mass)
-        if profile.prop_size_inches >= 13.0 or profile.weight_grams >= 7000:
-            d_change = 25.0
-            p_change = -5.0
-            reasoning.append(
-                "Ultra-heavy platform (13-15 inch class) detected. Significantly increasing D-term for inertia compensation and slightly reducing P-term to prevent low-frequency oscillations."
-            )
-        # heavy payload platforms (10 inch class, up to 4kg payload)
-        elif profile.prop_size_inches >= 10.0 or profile.weight_grams >= 4000:
-            d_change = 15.0
-            reasoning.append(
-                "Heavy payload platform (10 inch class) detected. Increasing D-term to ensure stable braking under load."
-            )
-        # standard tactical platforms (7-8 inch class, 1.5-2kg payload)
-        elif profile.prop_size_inches >= 7.0:
-            d_change = 5.0
-            reasoning.append(
-                "Tactical platform (7-8 inch class) detected. Minor D-term adjustment for payload stabilization."
-            )
-        else:
-            reasoning.append("Sub-7-inch platform detected. Base PID multipliers remain unchanged.")
+    @staticmethod
+    def _adjust_p(p: float, metrics: AxisMetrics, log: list) -> float:
+        pass
+
+    @staticmethod
+    def _adjust_i(i: float, metrics: AxisMetrics, log: list) -> float:
+        pass
+
+    @staticmethod
+    def _build_pid_recommendation(
+            axis_name: str, defaults: dict,
+            p: float, i: float, d: float, ff: float,
+            log: list,
+    ) -> PIDRecommendation:
+        """Clamps values to safe Betaflight ranges and builds the dataclass."""
+        p = round(max(8, min(p, 100)), 0)
+        i = round(max(15, min(i, 200)), 0)
+        d = round(max(0, min(d, 80)), 0)
+        ff = round(max(0, min(ff, 200)), 0)
+
+        pct = lambda rec, base: round((rec / base - 1) * 100, 1) if base > 0 else 0.0
 
         return PIDRecommendation(
             axis_name=axis_name,
-            p_current=0.0,
-            i_current=0.0,
-            d_current=0.0,
-            p_percent_change=p_change,
-            i_percent_change=i_change,
-            d_percent_change=d_change,
-            p_recommended=0.0,
-            i_recommended=0.0,
-            d_recommended=0.0,
-            reasoning=reasoning,
-            part_change_priority="D" if d_change > 0 else "P"
+            p_current=float(defaults["P"]), i_current=float(defaults["I"]),
+            d_current=float(defaults["D"]), feedforward_current=float(defaults["FF"]),
+            p_recommended=p, i_recommended=i,
+            d_recommended=d, feedforward_recommended=ff,
+            p_percent_change=pct(p, defaults["P"]),
+            i_percent_change=pct(i, defaults["I"]),
+            d_percent_change=pct(d, defaults["D"]) if defaults["D"] > 0 else 0.0,
+            reasoning=log,
+            part_change_priority=(
+                "D" if abs(d / max(defaults["D"], 1) - 1) > 0.08 else
+                "P" if abs(p / defaults["P"] - 1) > 0.05 else "I"
+            ),
         )
+
+    def _calculate_pids(self, axis_name: str, metrics: AxisMetrics, size_class: dict) -> PIDRecommendation:
+        defaults = size_class[axis_name]
+        p, i, d, ff = (float(defaults[k]) for k in ("P", "I", "D", "FF"))
+        log = [f"Base ({size_class['label']}): P={p:.0f} I={i:.0f} D={d:.0f}"]
+
+        d = self._adjust_d(d, metrics, log)
+        p = self._adjust_p(p, metrics, log)
+        i = self._adjust_i(i, metrics, log)
+
+        if axis_name == "Yaw" and ff == 0:
+            ff = 50.0
+            log.append("Yaw FF=50: compensates for D=0")
+
+        return self._build_pid_recommendation(axis_name, defaults, p, i, d, ff, log)
 
     def analyze(self, flight_data: FlightData, profile: DroneProfile) -> AnalysisResult:
         analyzer = FFTAnalyzer()
