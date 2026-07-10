@@ -1,3 +1,5 @@
+from email.policy import default
+
 from core.models.flight import FlightData
 from core.models.drone_profile import DroneProfile
 from core.models.metrics import FilterMetrics, AxisMetrics
@@ -61,33 +63,56 @@ class TuningEngine:
                 return cls
         return _SIZE_CLASSES[-1]  # fallback: smallest class
 
-    def _calculate_filters(self, metrics: FilterMetrics) -> FilterRecommendation:
-        reasoning = []
+    def _collect_fft_peaks(self, filter_metrics: dict) -> list[float]:
+        """Merges FFT peaks from all axes into one sorted, deduplicated list."""
+        peaks = []
+        for fm in filter_metrics.values():
+            peaks.extend(fm.peak_frequencies)
+        return sorted(set(round(f, 0) for f in peaks if f > 20))
 
-        if metrics.dominant_noise_frequency == 0.0:
-            reasoning.append(
-                "No dominant noise frequency detected. Gyroscope data is exceptionally clean or log is incomplete.")
-            return FilterRecommendation(
-                recommended_lpf_cutoff=0.0,
-                recommended_notch_center=0.0,
-                recommended_notch_bandwidth=0.0,
-                reasoning=reasoning
-            )
+    @staticmethod
+    def _calc_rpm_filter(profile: DroneProfile, log: list) -> tuple[int, float]:
+        pass
 
-        notch_center = metrics.dominant_noise_frequency
-        notch_bandwidth = notch_center * 0.15
-        lpf_cutoff = notch_center * 0.75
+    @staticmethod
+    def _calc_dynamic_notch(peaks: list, log: list) -> tuple[int, int, float, float]:
+        pass
 
-        reasoning.append(
-            f"Primary resonance detected at {notch_center:.1f} Hz. "
-            "Applied Notch filter to mitigate high-frequency motor and frame noise."
+    @staticmethod
+    def _calc_gyro_lpf(dominant_freq: float, profile: DroneProfile, log: list) -> tuple[float, float]:
+        pass
+
+    @staticmethod
+    def _calc_static_notches(peaks: list, log: list) -> tuple[float, float, float, float]:
+        pass
+
+    @staticmethod
+    def _calc_dterm_yaw(gyro_lpf_min: float, profile: DroneProfile, log: list) -> tuple[float, float, float, float]:
+        pass
+
+    def _calculate_filters(self, metrics: dict, profile: DroneProfile) -> FilterRecommendation:
+        log = []
+        peaks = self._collect_fft_peaks(metrics)
+        dominant = max(
+            (fm.dominant_noise_frequency for fm in metrics.values()), default=0.0
         )
 
+        harmonics, rpm_min = self._calc_rpm_filter(profile, log)
+        width, q, dn_min, dn_max = self._calc_dynamic_notch(peaks, log)
+        lpf_min, lpf_max = self._calc_gyro_lpf(dominant, profile, log)
+        n1c, n1cut, n2c, n2cut = self._calc_static_notches(peaks, log)
+        dmin, dmax, dlpf2, yaw_lpf = self._calc_dterm_yaw(lpf_min, profile, log)
+
         return FilterRecommendation(
-            recommended_lpf_cutoff=round(lpf_cutoff, 1),
-            recommended_notch_center=round(notch_center, 1),
-            recommended_notch_bandwidth=round(notch_bandwidth, 1),
-            reasoning=reasoning
+            gyro_lpf_min_hz=lpf_min, gyro_lpf_max_hz=lpf_max,
+            gyro_notch1_center_hz=n1c, gyro_notch1_cutoff_hz=n1cut,
+            gyro_notch2_center_hz=n2c, gyro_notch2_cutoff_hz=n2cut,
+            rpm_filter_harmonics=harmonics, rpm_filter_min_hz=rpm_min,
+            dyn_notch_width_pct=width, dyn_notch_q=q,
+            dyn_notch_min_hz=dn_min, dyn_notch_max_hz=dn_max,
+            dterm_lpf1_min_hz=dmin, dterm_lpf1_max_hz=dmax,
+            dterm_lpf2_hz=dlpf2, yaw_lpf_hz=yaw_lpf,
+            reasoning=log,
         )
 
     def _calculate_pids(self, axis_name: str, profile: DroneProfile) -> PIDRecommendation:
