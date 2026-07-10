@@ -72,23 +72,63 @@ class TuningEngine:
 
     @staticmethod
     def _calc_rpm_filter(profile: DroneProfile, log: list) -> tuple[int, float]:
-        pass
+        """Estimates RPM filter min frequency from motor KV (assumes 4S)."""
+        fund_hz = (profile.motor_kv * 14.8) / 60.0
+        rpm_min_hz = max(50.0, fund_hz * 0.28)
+        log.append(
+            f"RPM Filter: fund≈{fund_hz:.0f} Hz, min={rpm_min_hz:.0f} Hz, "
+            "3 harmonics. Adjust min×1.5 for 6S."
+        )
+        return 3, round(rpm_min_hz, 1)
 
     @staticmethod
     def _calc_dynamic_notch(peaks: list, log: list) -> tuple[int, int, float, float]:
-        pass
+        """Sets Dynamic Notch range and Q from detected FFT peaks."""
+        dyn_min = max(60.0, min(peaks) * 0.70) if peaks else 80.0
+        dyn_max = min(1000.0, max(peaks) * 1.35) if peaks else 600.0
+        spread = (max(peaks) - min(peaks)) if len(peaks) > 1 else 0
+        q = 350 if spread < 80 else 250
+        log.append(
+            f"Dynamic Notch: {dyn_min:.0f}–{dyn_max:.0f} Hz, "
+            f"Q={q} ({'narrow' if q == 350 else 'wide'}), width=8%"
+        )
+        return 8, q, round(dyn_min, 1), round(dyn_max, 1)
 
     @staticmethod
     def _calc_gyro_lpf(dominant_freq: float, profile: DroneProfile, log: list) -> tuple[float, float]:
-        pass
+        """Sets Gyro LPF dynamic range from dominant noise frequency."""
+        if dominant_freq > 0:
+            lpf_min = max(80.0, dominant_freq * 0.45)
+            lpf_max = min(500.0, dominant_freq * 1.15)
+        else:
+            lpf_min = 150.0 if profile.prop_size_inches >= 10.0 else 200.0
+            lpf_max = 400.0 if profile.prop_size_inches >= 10.0 else 500.0
+        log.append(f"Gyro LPF dynamic: {lpf_min:.0f}–{lpf_max:.0f} Hz")
+        return round(lpf_min, 1), round(lpf_max, 1)
 
     @staticmethod
     def _calc_static_notches(peaks: list, log: list) -> tuple[float, float, float, float]:
-        pass
+        """Recommends up to 2 static notch filters for the strongest fixed peaks."""
+        strong = [f for f in peaks if f > 60.0]
+        n1c = n1cut = n2c = n2cut = 0.0
+        if len(strong) >= 1:
+            n1c, n1cut = strong[0], round(strong[0] * 0.85, 1)
+            log.append(f"Static Notch 1: {n1c:.0f} Hz — use if RPM+DynNotch insufficient")
+        if len(strong) >= 2:
+            n2c, n2cut = strong[1], round(strong[1] * 0.85, 1)
+            log.append(f"Static Notch 2: {n2c:.0f} Hz")
+        return n1c, n1cut, n2c, n2cut
 
     @staticmethod
     def _calc_dterm_yaw(gyro_lpf_min: float, profile: DroneProfile, log: list) -> tuple[float, float, float, float]:
-        pass
+        """Sets D-Term LPF and Yaw LPF relative to Gyro LPF."""
+        dmin = max(50.0, gyro_lpf_min * 0.38)
+        dmax = max(100.0, gyro_lpf_min * 0.65)
+        dlpf2 = min(170.0, dmax * 1.15)
+        yaw = max(60.0, gyro_lpf_min * 0.45)
+        log.append(f"D-Term LPF: {dmin:.0f}–{dmax:.0f} Hz, LPF2={dlpf2:.0f} Hz")
+        log.append(f"Yaw LPF: {yaw:.0f} Hz")
+        return round(dmin, 1), round(dmax, 1), round(dlpf2, 1), round(yaw, 1)
 
     def _calculate_filters(self, metrics: dict, profile: DroneProfile) -> FilterRecommendation:
         log = []
