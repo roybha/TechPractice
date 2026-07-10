@@ -157,15 +157,63 @@ class TuningEngine:
 
     @staticmethod
     def _adjust_d(d: float, metrics: AxisMetrics, log: list) -> float:
-        pass
+        """Step 2: Adjusts D based on oscillation frequency."""
+        if not metrics.oscillation_is_detected:
+            if metrics.overshoot_percents > 0.25:
+                log.append(f"D ↑20%: overshoot {metrics.overshoot_percents * 100:.0f}% without oscillation → D too low")
+                return d * 1.20
+            return d
+
+        freq = metrics.oscillation_frequency
+        if freq >= 80.0:
+            log.append(f"D ↓25%: {freq:.0f} Hz — D amplifying motor noise")
+            return d * 0.75
+        if freq >= 50.0:
+            log.append(f"D ↓15%: {freq:.0f} Hz — D too high")
+            return d * 0.85
+        # 15–50 Hz: P-driven, but slight D increase helps dampen
+        log.append(f"D ↑10%: mid-freq {freq:.0f} Hz — slight damping increase")
+        return d * 1.10
 
     @staticmethod
     def _adjust_p(p: float, metrics: AxisMetrics, log: list) -> float:
-        pass
+        """Step 3: Adjusts P based on overshoot and low-frequency oscillations."""
+        # Low-freq oscillation is a P signature
+        if metrics.oscillation_is_detected and metrics.oscillation_frequency < 15.0:
+            log.append(f"P ↓15%: low-freq {metrics.oscillation_frequency:.0f} Hz oscillation → P too high")
+            return p * 0.85
+
+        overshoot = metrics.overshoot_percents
+        if overshoot > 0.35:
+            log.append(f"P ↓30%: critical overshoot {overshoot * 100:.0f}%")
+            return p * 0.70
+        if overshoot > 0.20:
+            log.append(f"P ↓15%: overshoot {overshoot * 100:.0f}% > 20%")
+            return p * 0.85
+        if overshoot > 0.10:
+            log.append(f"P ↓7%: overshoot {overshoot * 100:.0f}% slightly above target")
+            return p * 0.93
+        if overshoot < 0.03 and not metrics.oscillation_is_detected:
+            log.append("P ↑8%: clean response, low overshoot → room to increase P")
+            return p * 1.08
+        return p
 
     @staticmethod
     def _adjust_i(i: float, metrics: AxisMetrics, log: list) -> float:
-        pass
+        """Step 4: Adjusts I based on steady-state error and settling time."""
+        if metrics.steady_state_error > 0.07:
+            log.append(f"I ↑25%: residual error {metrics.steady_state_error * 100:.1f}%")
+            return i * 1.25
+        if metrics.steady_state_error > 0.04:
+            log.append(f"I ↑12%: residual error {metrics.steady_state_error * 100:.1f}%")
+            return i * 1.12
+        if metrics.settling_time_seconds > 0.40:
+            log.append(f"I ↑15%: settling {metrics.settling_time_seconds * 1000:.0f} ms too slow")
+            return i * 1.15
+        if metrics.settling_time_seconds > 0.25:
+            log.append(f"I ↑8%: settling {metrics.settling_time_seconds * 1000:.0f} ms slightly slow")
+            return i * 1.08
+        return i
 
     @staticmethod
     def _build_pid_recommendation(
