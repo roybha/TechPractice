@@ -173,62 +173,55 @@ class TuningEngine:
         return self._build_pid_recommendation(axis_name, defaults, p, i, d, ff, log)
 
     def analyze(self, flight_data: FlightData, profile: DroneProfile) -> AnalysisResult:
-        analyzer = FFTAnalyzer()
+        """Runs full analysis: FFT + PID metrics → filter + PID recommendations."""
+        fft_analyzer = FFTAnalyzer()
+        pid_analyzer = PIDAnalyzer()
+        size_class = self._get_size_class(profile)
 
         axes = {
-            "Roll": flight_data.gyro_roll,
-            "Pitch": flight_data.gyro_pitch,
-            "Yaw": flight_data.gyro_yaw
+            "Roll": (flight_data.setpoint_roll, flight_data.gyro_roll),
+            "Pitch": (flight_data.setpoint_pitch, flight_data.gyro_pitch),
+            "Yaw": (flight_data.setpoint_yaw, flight_data.gyro_yaw),
         }
 
-        filter_metrics_dict = {}
-        filter_recs_dict = {}
-        pid_recs_list = []
-        global_assessment = "Flight dynamics are within standard operational parameters."
+        axis_metrics: dict = {}
+        filter_metrics: dict = {}
+        pid_recs: list = []
+        assessment = f"Size class: {size_class['label']}. Dynamics within expected parameters."
 
-        for axis_name, gyro_array in axes.items():
-            f_metrics = analyzer.analyze_axis(axis_name, gyro_array, flight_data.sample_rate_hz)
-            filter_metrics_dict[axis_name] = f_metrics
+        for axis_name, (sp, gyro) in axes.items():
+            am = pid_analyzer.analyze_axis(axis_name, sp, gyro, flight_data.timestamp)
+            fm = fft_analyzer.analyze_axis(axis_name, gyro, flight_data.sample_rate_hz)
+            axis_metrics[axis_name] = am
+            filter_metrics[axis_name] = fm
+            pid_recs.append(self._calculate_pids(axis_name, am, size_class))
 
-            filter_recs_dict[axis_name] = self._calculate_filters(f_metrics)
-            pid_recs_list.append(self._calculate_pids(axis_name, profile))
-
-            if 0 < f_metrics.dominant_noise_frequency < 50.0:
-                global_assessment = (
-                    f"CRITICAL STRUCTURAL WARNING: Low-frequency oscillations ({f_metrics.dominant_noise_frequency:.1f} Hz) "
-                    f"detected on the {axis_name} axis. Indicates severe mechanical compliance, loose hardware, or frame fracture. "
-                    "Software filtering is ineffective. Immediate hardware inspection required."
+            if 0 < fm.dominant_noise_frequency < 25.0:
+                assessment = (
+                    f"CRITICAL: {fm.dominant_noise_frequency:.0f} Hz low-freq noise on "
+                    f"{axis_name}. Inspect hardware before flying."
                 )
 
-        pid_analyzer = PIDAnalyzer()
+        filter_rec = self._calculate_filters(filter_metrics, profile)
 
-        axis_metrics = {
-            "Roll": pid_analyzer.analyze_axis(
-                "Roll",
-                flight_data.setpoint_roll,
-                flight_data.gyro_roll,
-                flight_data.timestamp,
-            ),
-            "Pitch": pid_analyzer.analyze_axis(
-                "Pitch",
-                flight_data.setpoint_pitch,
-                flight_data.gyro_pitch,
-                flight_data.timestamp,
-            ),
-            "Yaw": pid_analyzer.analyze_axis(
-                "Yaw",
-                flight_data.setpoint_yaw,
-                flight_data.gyro_yaw,
-                flight_data.timestamp,
-            ),
-        }
+        scores = []
+        for am in axis_metrics.values():
+            s = 100.0
+            if am.overshoot_percents > 0.20:
+                s -= 25
+            elif am.overshoot_percents > 0.10:
+                s -= 10
+            if am.oscillation_is_detected:       s -= 20
+            if am.settling_time_seconds > 0.40:  s -= 15
+            if am.steady_state_error > 0.05:     s -= 10
+            scores.append(max(0.0, s))
 
         return AnalysisResult(
             flight_data=flight_data,
             axis_metrics=axis_metrics,
-            filter_metrics=filter_metrics_dict,
-            overall_quality_score=85.0 if "CRITICAL" not in global_assessment else 20.0,
-            overall_assessment=global_assessment,
-            pid_recommendations=pid_recs_list,
-            filter_recommendation=filter_recs_dict["Roll"]
+            filter_metrics=filter_metrics,
+            overall_quality_score=round(sum(scores) / len(scores), 1) if scores else 0.0,
+            overall_assessment=assessment,
+            pid_recommendations=pid_recs,
+            filter_recommendation=filter_rec,
         )
