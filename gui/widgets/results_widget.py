@@ -1,143 +1,94 @@
-from PyQt5.QtWidgets import QTableWidgetItem, QTableWidget, QLabel, QWidget
 from gui.style import AppStyles
-from PyQt5.QtWidgets import QWidget, QTextEdit, QVBoxLayout, QHBoxLayout, QPushButton
+from PyQt5.QtWidgets import (
+    QWidget, QVBoxLayout, QTabWidget,
+    QTableWidget, QTableWidgetItem, QHeaderView, QLabel,
+)
 from core.models.analysis import AnalysisResult
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QColor, QFont
+from pid_widget import PIDWidget
+from filter_widget import FilterWidget
 
 class TableFactory:
     @staticmethod
     def cell(text: str, color: str = AppStyles.TEXT,
              bold: bool = False) -> QTableWidgetItem:
-        pass
+        it = QTableWidgetItem(str(text))
+        it.setForeground(QColor(color))
+        it.setFlags(Qt.ItemIsEnabled)
+        if bold:
+            f = QFont("Consolas", 11)
+        f.setBold(True)
+        it.setFont(f)
+        return it
 
     @staticmethod
     def table(headers: list[str], rows: int,
               row_h: int = 28) -> QTableWidget:
-        pass
+        t = QTableWidget(rows, len(headers))
+        t.setHorizontalHeaderLabels(headers)
+        t.verticalHeader().setVisible(False)
+        t.setEditTriggers(QTableWidget.NoEditTriggers)
+        t.setSelectionMode(QTableWidget.NoSelection)
+        t.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        t.setFixedHeight(34 + rows * row_h)
+        t.setStyleSheet(AppStyles.get_stylesheet())
+        return t
 
     @staticmethod
     def section_label(text: str) -> QLabel:
-        pass
+        lbl = QLabel(f"  {text}")
+        lbl.setStyleSheet(
+            f"background:#1C2B1C; color:{AppStyles.GREEN}; font-family:Consolas;"
+            "font-size:12px; font-weight:bold; padding:5px; border-radius:3px;"
+        )
+        return lbl
 
     @staticmethod
     def setting_table(rows: list[tuple],
                       val_color: str = AppStyles.GREEN) -> QTableWidget:
-        pass
+        """Convenience: 3-column (Setting | Value | Note) table."""
+        t = TableFactory.table(["Setting", "Value", "Note"], len(rows))
+        for r, (name, val, note) in enumerate(rows):
+            t.setItem(r, 0, TableFactory.cell(name))
+            t.setItem(r, 1, TableFactory.cell(val, val_color, bold=True))
+            t.setItem(r, 2, TableFactory.cell(note, AppStyles.MUTED))
+        return t
 
-class ResultsTab(QWidget):
+class ResultsWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.console: QTextEdit = None
         self._build_ui()
 
     def _build_ui(self):
         layout = QVBoxLayout(self)
 
-        self.console = QTextEdit()
-        self.console.setReadOnly(True)
-        self.console.setObjectName('consoleOutput')
-        self.console.setText('Awaiting data...')
-        layout.addWidget(self.console)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
-        # Clear button
-        button_layout = QHBoxLayout()
-        clear_button = QPushButton('Clear')
-        clear_button.clicked.connect(self.console.clear)
-        button_layout.addStretch()
-        button_layout.addWidget(clear_button)
-        layout.addLayout(button_layout)
+        self._banner = self._make_banner()
+        layout.addWidget(self._banner)
+        self._pid_tab = PIDWidget()
+        self._filter_tab = FilterWidget()
+
+        tabs = QTabWidget()
+        tabs.setStyleSheet(AppStyles.get_stylesheet())
+        tabs.addTab(self._pid_tab, "PID Tuning")
+        tabs.addTab(self._filter_tab, "Filter Settings")
+        layout.addWidget(tabs)
+
+    @staticmethod
+    def _make_banner() -> QLabel:
+        pass
 
     def log(self, text: str):
-        self.console.append(text)
+        pass
 
     def display_result(self, result: AnalysisResult):
-        self.clear()
-        self.log("=" * 60)
-        self.log("  TUNING REPORT")
-        self.log("=" * 60)
-        self.log(f"\n[STATUS]  {result.overall_assessment}")
-        self.log(f"[SCORE]   {result.overall_quality_score:.0f} / 100\n")
-
-        # Call of private methods
-        self._display_pid_recommendations(result)
-        self._display_filter_settings(result)
-        self._display_flight_metrics(result)
-
-    def _display_pid_recommendations(self, result: AnalysisResult):
-        self.log("─" * 64)
-        self.log("  PID RECOMMENDATIONS ")
-        self.log("─" * 64)
-        self.log(f"  {'AXIS':<8} {'P':>6} {'I':>6} {'D':>6} {'FF':>6}   CHANGE")
-        self.log(f"  {'────':<8} {'──':>6} {'──':>6} {'──':>6} {'──':>6}")
-
-        for rec in result.pid_recommendations:
-            p_arrow = "↓" if rec.p_percent_change < -2 else ("↑" if rec.p_percent_change > 2 else "·")
-            i_arrow = "↓" if rec.i_percent_change < -2 else ("↑" if rec.i_percent_change > 2 else "·")
-            d_arrow = "↓" if rec.d_percent_change < -2 else ("↑" if rec.d_percent_change > 2 else "·")
-            self.log(
-                f"  {rec.axis_name:<8}"
-                f" {rec.p_recommended:>5.0f}{p_arrow}"
-                f" {rec.i_recommended:>5.0f}{i_arrow}"
-                f" {rec.d_recommended:>5.0f}{d_arrow}"
-                f" {rec.feedforward_recommended:>5.0f}"
-                f"   priority: {rec.part_change_priority}"
-            )
-
-        self.log("")
-        for rec in result.pid_recommendations:
-            self.log(f"  [{rec.axis_name}] reasoning:")
-            for r in rec.reasoning:
-                self.log(f"    → {r}")
-        self.log("")
-
-    def _display_filter_settings(self, result: AnalysisResult):
-        fr = result.filter_recommendation
-        if not fr:
-            return
-
-        self.log("─" * 64)
-        self.log("  FILTER RECOMMENDATIONS)")
-        self.log("─" * 64)
-
-        self.log("\n  GYRO LOWPASS (Dynamic):")
-        self.log(f"    Gyro LPF1 Dynamic Min Cutoff : {fr.gyro_lpf_min_hz:.0f} Hz")
-        self.log(f"    Gyro LPF1 Dynamic Max Cutoff : {fr.gyro_lpf_max_hz:.0f} Hz")
-
-        if fr.gyro_notch1_center_hz > 0:
-            self.log("\n  GYRO NOTCH FILTERS:")
-            self.log(f"    Notch 1 Center  : {fr.gyro_notch1_center_hz:.0f} Hz")
-            self.log(f"    Notch 1 Cutoff  : {fr.gyro_notch1_cutoff_hz:.0f} Hz")
-        if fr.gyro_notch2_center_hz > 0:
-            self.log(f"    Notch 2 Center  : {fr.gyro_notch2_center_hz:.0f} Hz")
-            self.log(f"    Notch 2 Cutoff  : {fr.gyro_notch2_cutoff_hz:.0f} Hz")
-
-        self.log("\n  RPM FILTER  (most effective — enable this first):")
-        self.log(f"    Harmonics       : {fr.rpm_filter_harmonics}")
-        self.log(f"    Min Frequency   : {fr.rpm_filter_min_hz:.0f} Hz")
-
-        self.log("\n  D-TERM LOWPASS:")
-        self.log(f"    LPF1 Dyn Min    : {fr.dterm_lpf1_min_hz:.0f} Hz")
-        self.log(f"    LPF1 Dyn Max    : {fr.dterm_lpf1_max_hz:.0f} Hz")
-        self.log(f"    LPF2 Static     : {fr.dterm_lpf2_hz:.0f} Hz")
-
-        self.log("\n  YAW LOWPASS:")
-        self.log(f"    Yaw LPF Cutoff  : {fr.yaw_lpf_hz:.0f} Hz")
-
-        self.log("\n  Filter reasoning:")
-        for r in fr.reasoning:
-            self.log(f"    → {r}")
-        self.log("")
-
-    def _display_flight_metrics(self, result: AnalysisResult):
-        self.log("─" * 64)
-        self.log("  CURRENT FLIGHT METRICS ")
-        self.log("─" * 64)
-        for axis_name, m in result.axis_metrics.items():
-            self.log(f"\n  [{axis_name}]")
-            self.log(f"    Overshoot   : {m.overshoot_percents * 100:.1f}%   P → {m.p_part}")
-            self.log(f"    Rise time   : {m.rise_time_seconds * 1000:.0f} ms")
-            self.log(f"    Settling    : {m.settling_time_seconds * 1000:.0f} ms  I → {m.i_part}")
-            osc = f"{m.oscillation_frequency:.0f} Hz" if m.oscillation_is_detected else "Clean"
-            self.log(f"    Oscillation : {osc}   D → {m.d_part}")
+        pass
 
     def clear(self):
-        self.console.clear()
+        pass
+
+    def _update_banner(self, result: AnalysisResult):
+        pass
