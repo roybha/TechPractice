@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTableWidgetItem
 from gui.style import AppStyles
 from core.models.analysis import AnalysisResult
-from results_widget import TableFactory
+from gui.widgets.table_factory import TableFactory
 
 class PIDWidget(QWidget):
     """

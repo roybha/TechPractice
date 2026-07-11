@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTableWidgetItem
 from gui.style import AppStyles
 from core.models.recommendations import FilterRecommendation
-from results_widget import TableFactory
+from gui.widgets.table_factory import TableFactory
 
 class FilterWidget(QWidget):
     """
@@ -15,7 +15,7 @@ class FilterWidget(QWidget):
 
     def __init__(self):
         super().__init__()
-        self.setStyleSheet(f"background:{AppStyles.BG};")
+        self.setStyleSheet(f"background:{AppStyles.BG_DARK};")
         self._layout = QVBoxLayout(self)
         self._layout.setSpacing(6)
 
