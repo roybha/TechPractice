@@ -19,7 +19,7 @@ class AppStyles:
     # QSS builders
     @staticmethod
     def get_stylesheet() -> str:
-        return DARK_THEME
+        return _DARK_THEME
 
     @staticmethod
     def table_style() -> str:

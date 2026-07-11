@@ -1,9 +1,29 @@
+from PyQt5.QtWidgets import QTableWidgetItem, QTableWidget, QLabel, QWidget
+from gui.style import AppStyles
 from PyQt5.QtWidgets import QWidget, QTextEdit, QVBoxLayout, QHBoxLayout, QPushButton
-
 from core.models.analysis import AnalysisResult
 
+class TableFactory:
+    @staticmethod
+    def cell(text: str, color: str = AppStyles.TEXT,
+             bold: bool = False) -> QTableWidgetItem:
+        pass
 
-class ConsoleWidget(QWidget):
+    @staticmethod
+    def table(headers: list[str], rows: int,
+              row_h: int = 28) -> QTableWidget:
+        pass
+
+    @staticmethod
+    def section_label(text: str) -> QLabel:
+        pass
+
+    @staticmethod
+    def setting_table(rows: list[tuple],
+                      val_color: str = AppStyles.GREEN) -> QTableWidget:
+        pass
+
+class ResultsTab(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.console: QTextEdit = None
@@ -26,7 +46,7 @@ class ConsoleWidget(QWidget):
         button_layout.addWidget(clear_button)
         layout.addLayout(button_layout)
 
-    def log(self, text:str):
+    def log(self, text: str):
         self.console.append(text)
 
     def display_result(self, result: AnalysisResult):

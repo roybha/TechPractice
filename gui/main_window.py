@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QVBoxLayout, QWidget, QLab
 from core.log_parser import LogParser
 from core.tuning_engine import TuningEngine
 from gui.style import AppStyles
-from gui.widgets.console_widget import ConsoleWidget
+from gui.widgets.results_widget import ConsoleWidget
 from gui.widgets.plot_widget import PlotWidget
 from gui.widgets.profile_widget import ProfileWidget
 
