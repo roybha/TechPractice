@@ -1,17 +1,86 @@
 class AppStyles:
 
+    # Base palette
     BG_DARK    = "#121212"
     BG_WIDGET  = "#1E1E1E"
     BG_PLOT    = "#050505"
+    BG_TABLE   = "#1A1A1A"  # table backgrounds
+    BG_HEAD    = "#2A2A2A"  # table / tab headers
+
+    # Accent colors
     GREEN      = "#00FF41"   # active elements
     AMBER      = "#FFB000"   #  actual plot
     RED        = "#FF003C"   # error plot
+    CYAN       = "#00B4D8"  # axis labels, highlight
     TEXT       = "#E0E0E0"
+    MUTED      = "#555555"  # secondary / disabled text
     BORDER     = "#333333"
 
+    # QSS builders
     @staticmethod
     def get_stylesheet() -> str:
         return DARK_THEME
+
+    @staticmethod
+    def table_style() -> str:
+        """QSS for QTableWidget — import once, reuse everywhere."""
+        return f"""
+                    QTableWidget {{
+                        background: {AppStyles.BG_TABLE};
+                        color: {AppStyles.TEXT};
+                        font-family: Consolas;
+                        font-size: 12px;
+                        border: 1px solid {AppStyles.BORDER};
+                        gridline-color: {AppStyles.BORDER};
+                    }}
+                    QHeaderView::section {{
+                        background: {AppStyles.BG_HEAD};
+                        color: {AppStyles.MUTED};
+                        font-weight: bold;
+                        padding: 4px;
+                        border: none;
+                    }}
+                    QTableWidget::item {{ padding: 3px 6px; }}
+                """
+
+    @staticmethod
+    def tab_style() -> str:
+        """QSS for QTabWidget — consistent across all tab containers."""
+        return f"""
+                QTabWidget::pane {{
+                    border: 1px solid {AppStyles.BORDER};
+                    background: {AppStyles.BG_DARK};
+                }}
+                QTabBar::tab {{
+                    background: {AppStyles.BG_WIDGET};
+                    color: {AppStyles.MUTED};
+                    padding: 6px 18px;
+                    font-family: Consolas;
+                    font-size: 12px;
+                }}
+                QTabBar::tab:selected {{
+                    background: {AppStyles.BG_HEAD};
+                    color: {AppStyles.GREEN};
+                }}
+            """
+
+    @staticmethod
+    def banner_style(color: str) -> str:
+        """Inline style for the status/score banner label."""
+        return (
+            f"background: {AppStyles.BG_TABLE}; color: {color}; "
+            "font-family: Consolas; font-size: 12px; "
+            "font-weight: bold; padding: 6px;"
+        )
+
+    @staticmethod
+    def section_label_style() -> str:
+        """Inline style for green section headers inside result tabs."""
+        return (
+            f"background: #1C2B1C; color: {AppStyles.GREEN}; "
+            "font-family: Consolas; font-size: 12px; "
+            "font-weight: bold; padding: 5px; border-radius: 3px;"
+        )
 
 DARK_THEME = """
     QMainWindow { background-color: #121212; }

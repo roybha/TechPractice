@@ -1,8 +1,6 @@
-from email.policy import default
-
 from core.models.flight import FlightData
 from core.models.drone_profile import DroneProfile
-from core.models.metrics import FilterMetrics, AxisMetrics
+from core.models.metrics import AxisMetrics
 from core.models.recommendations import PIDRecommendation, FilterRecommendation
 from core.models.analysis import AnalysisResult
 from core.fft_analyzer import FFTAnalyzer
