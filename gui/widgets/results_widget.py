@@ -1,8 +1,8 @@
 from gui.style import AppStyles
-from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QTabWidget,
-    QTableWidget, QTableWidgetItem, QHeaderView, QLabel,
-)
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout,
+                             QTabWidget, QTableWidget,
+                             QTableWidgetItem, QHeaderView,
+                             QLabel)
 from core.models.analysis import AnalysisResult
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QFont
@@ -79,16 +79,35 @@ class ResultsWidget(QWidget):
 
     @staticmethod
     def _make_banner() -> QLabel:
-        pass
-
-    def log(self, text: str):
-        pass
+        lbl = QLabel("  Load a log to see recommendations.")
+        lbl.setStyleSheet(
+            f"background:#1A1A1A; color:{AppStyles.MUTED}; font-family:Consolas;"
+            "font-size:12px; padding:6px;"
+        )
+        return lbl
 
     def display_result(self, result: AnalysisResult):
-        pass
+        """Entry point called by MainWindow after every successful analysis."""
+        self._update_banner(result)
+        self._pid_tab.refresh(result)
+        if result.filter_recommendation:
+            self._filter_tab.refresh(result.filter_recommendation)
 
     def clear(self):
-        pass
+        self._banner.setText("  Load a log to see recommendations.")
+        self._banner.setStyleSheet(
+            f"background:#1A1A1A; color:{AppStyles.MUTED}; font-family:Consolas;"
+            "font-size:12px; padding:6px;"
+        )
 
     def _update_banner(self, result: AnalysisResult):
-        pass
+        score = result.overall_quality_score
+        color = (AppStyles.GREEN if score >= 80 else
+                 AppStyles.AMBER if score >= 60 else AppStyles.RED)
+        self._banner.setText(
+            f"  Score: {score:.0f}/100   │   {result.overall_assessment}"
+        )
+        self._banner.setStyleSheet(
+            f"background:#1A1A1A; color:{color}; font-family:Consolas;"
+            "font-size:12px; font-weight:bold; padding:6px;"
+        )
