@@ -57,6 +57,7 @@ class AppStyles:
                     padding: 6px 18px;
                     font-family: Consolas;
                     font-size: 12px;
+                    min-width: 140px;
                 }}
                 QTabBar::tab:selected {{
                     background: {AppStyles.BG_HEAD};
@@ -167,6 +168,7 @@ _DARK_THEME = f"""
         padding: 6px 18px;
         font-family: Consolas;
         font-size: 12px;
+        min-width: 140px;
     }}
     QTabBar::tab:selected {{
         background: {AppStyles.BG_HEAD};
