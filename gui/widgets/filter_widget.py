@@ -1,23 +1,40 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTableWidgetItem
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea
 from gui.style import AppStyles
-from core.models.recommendations import FilterRecommendation
 from gui.widgets.table_factory import TableFactory
+from core.models.recommendations import FilterRecommendation
 
 class FilterWidget(QWidget):
     """
-        Displays filter recommendations as numbered sections:
-          ① RPM Filter
-          ② Dynamic Notch
-          ③ Gyro Lowpass
-          ④ Static Notch  (only when strong peaks detected)
-          ⑤ D-Term & Yaw Lowpass
-        """
+    Scrollable filter recommendations panel with five numbered sections:
+      ① RPM Filter
+      ② Dynamic Notch
+      ③ Gyro Lowpass
+      ④ Static Notch  (only when strong peaks detected)
+      ⑤ D-Term & Yaw Lowpass
+    """
 
     def __init__(self):
         super().__init__()
-        self.setStyleSheet(f"background:{AppStyles.BG_DARK};")
-        self._layout = QVBoxLayout(self)
+        self._build_ui()
+
+    def _build_ui(self):
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet(
+            f"QScrollArea {{ border: none; background: {AppStyles.BG_DARK}; }}"
+        )
+
+        self._content = QWidget()
+        self._content.setStyleSheet(f"background: {AppStyles.BG_DARK};")
+        self._layout = QVBoxLayout(self._content)
         self._layout.setSpacing(6)
+        self._layout.setContentsMargins(4, 4, 4, 4)
+
+        scroll.setWidget(self._content)
+        outer.addWidget(scroll)
 
     def refresh(self, fr: FilterRecommendation):
         self._clear()
@@ -32,7 +49,7 @@ class FilterWidget(QWidget):
         self._layout.addWidget(TableFactory.section_label(
             "① RPM Filter  —  enable first, most effective"))
         self._layout.addWidget(TableFactory.setting_table([
-            ("Harmonics", str(fr.rpm_filter_harmonics),
+            ("Harmonics",     str(fr.rpm_filter_harmonics),
              "covers fundamental + 2 harmonics"),
             ("Min Frequency", f"{fr.rpm_filter_min_hz:.0f} Hz",
              "multiply ×1.5 for 6S battery"),
@@ -42,10 +59,10 @@ class FilterWidget(QWidget):
         self._layout.addWidget(TableFactory.section_label(
             "② Dynamic Notch Filter"))
         self._layout.addWidget(TableFactory.setting_table([
-            ("Width Percent", f"{fr.dyn_notch_width_pct} %", "8% = good default"),
-            ("Q", str(fr.dyn_notch_q), "250=wide  350=narrow"),
-            ("Min Hz", f"{fr.dyn_notch_min_hz:.0f} Hz", "lower search bound"),
-            ("Max Hz", f"{fr.dyn_notch_max_hz:.0f} Hz", "upper search bound"),
+            ("Width Percent", f"{fr.dyn_notch_width_pct} %",    "8% = good default"),
+            ("Q",             str(fr.dyn_notch_q),               "250=wide  350=narrow"),
+            ("Min Hz",        f"{fr.dyn_notch_min_hz:.0f} Hz",  "lower search bound"),
+            ("Max Hz",        f"{fr.dyn_notch_max_hz:.0f} Hz",  "upper search bound"),
         ]))
 
     def _add_gyro_lpf(self, fr: FilterRecommendation):
@@ -64,8 +81,8 @@ class FilterWidget(QWidget):
         self._layout.addWidget(TableFactory.section_label(
             "④ Gyro Static Notch  —  use only if RPM+DynNotch insufficient"))
         rows = [
-            ("Notch 1 Center", f"{fr.gyro_notch1_center_hz:.0f} Hz", "strongest peak"),
-            ("Notch 1 Cutoff", f"{fr.gyro_notch1_cutoff_hz:.0f} Hz", "85% of center"),
+            ("Notch 1 Center",  f"{fr.gyro_notch1_center_hz:.0f} Hz", "strongest peak"),
+            ("Notch 1 Cutoff",  f"{fr.gyro_notch1_cutoff_hz:.0f} Hz", "85% of center"),
         ]
         if fr.gyro_notch2_center_hz > 0:
             rows += [
@@ -73,7 +90,7 @@ class FilterWidget(QWidget):
                 ("Notch 2 Cutoff", f"{fr.gyro_notch2_cutoff_hz:.0f} Hz", "85% of center"),
             ]
         self._layout.addWidget(
-            TableFactory.setting_table(rows, val_color= AppStyles.AMBER))
+            TableFactory.setting_table(rows, val_color=AppStyles.AMBER))
 
     def _add_dterm_yaw(self, fr: FilterRecommendation):
         self._layout.addWidget(TableFactory.section_label(
@@ -81,8 +98,8 @@ class FilterWidget(QWidget):
         self._layout.addWidget(TableFactory.setting_table([
             ("D-Term LPF1 Min", f"{fr.dterm_lpf1_min_hz:.0f} Hz", "dynamic lower bound"),
             ("D-Term LPF1 Max", f"{fr.dterm_lpf1_max_hz:.0f} Hz", "dynamic upper bound"),
-            ("D-Term LPF2", f"{fr.dterm_lpf2_hz:.0f} Hz", "static cutoff"),
-            ("Yaw LPF Cutoff", f"{fr.yaw_lpf_hz:.0f} Hz", "yaw axis filter"),
+            ("D-Term LPF2",     f"{fr.dterm_lpf2_hz:.0f} Hz",     "static cutoff"),
+            ("Yaw LPF Cutoff",  f"{fr.yaw_lpf_hz:.0f} Hz",        "yaw axis filter"),
         ]))
 
     def _clear(self):

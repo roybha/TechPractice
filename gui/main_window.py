@@ -28,7 +28,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("PID Analyzer")
-        self.setGeometry(100, 100, 1440, 900)
+        self.showMaximized()
         self.setMinimumSize(1100, 700)
 
         self._parser = LogParser()
