@@ -13,12 +13,22 @@ class LogParser:
             "setpoint_pitch": ["setpoint[1]", "rcCommand[1]", "rcPitch", "rc_pitch", "setpoint_pitch", "DesPitch", "PIDP.Tar"],
             "setpoint_yaw": ["setpoint[2]", "rcCommand[2]", "rcYaw", "rc_yaw", "setpoint_yaw", "DesYaw", "PIDY.Tar"]
         }
+
+    def _find_data_start(self, filepath: str) -> int:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            for i, line in enumerate(f):
+                if line.startswith('"loopIteration"') or line.startswith('loopIteration'):
+                    return i
+        return 0
+
     def parse(self, filepath: str):
         if not filepath.endswith(".csv"):
             raise ValueError("File extension must be .csv")
 
         try:
-            data_frame = pd.read_csv(filepath)
+            skip_lines = self._find_data_start(filepath)
+            data_frame = pd.read_csv(filepath, skiprows=skip_lines)
+            data_frame.columns = data_frame.columns.str.strip()
             clean_df = self._extract_columns(data_frame)
             time_array = clean_df["time"].to_numpy()
             duration_seconds = (time_array[-1] - time_array[0]) / 1_000_000.0
