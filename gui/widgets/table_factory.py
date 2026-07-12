@@ -1,6 +1,9 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QFont
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView, QLabel
+from PyQt5.QtWidgets import (
+    QTableWidget, QTableWidgetItem, QHeaderView, QLabel,
+    QAbstractScrollArea,
+)
 
 from gui.style import AppStyles
 
@@ -14,7 +17,7 @@ class TableFactory:
         it = QTableWidgetItem(str(text))
         it.setForeground(QColor(color))
         it.setFlags(Qt.ItemIsEnabled)
-        if bold:                          # ← fixed: font only created when needed
+        if bold:
             f = QFont("Consolas", 11)
             f.setBold(True)
             it.setFont(f)
@@ -29,8 +32,19 @@ class TableFactory:
         t.setEditTriggers(QTableWidget.NoEditTriggers)
         t.setSelectionMode(QTableWidget.NoSelection)
         t.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        t.setFixedHeight(34 + rows * row_h)
-        t.setStyleSheet(AppStyles.table_style())   # ← fixed: table-only QSS
+        t.setStyleSheet(AppStyles.table_style())
+
+        # Size policy: table sizes to its content
+        # setFixedHeight prevented scroll from working.
+        # setSizeAdjustPolicy makes the table exactly as tall as its rows.
+        t.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
+        t.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)  # outer scroll handles it
+        t.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        # Set uniform row heights
+        for r in range(rows):
+            t.setRowHeight(r, row_h)
+
         return t
 
     @staticmethod
