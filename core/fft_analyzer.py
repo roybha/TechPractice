@@ -2,7 +2,6 @@ import numpy as np
 from scipy.signal import find_peaks
 from core.models import FilterMetrics
 
-
 class FFTAnalyzer:
 
     def analyze_axis(self, axis_name: str, gyro_data: np.ndarray, sample_rate_hz: float) -> FilterMetrics:
