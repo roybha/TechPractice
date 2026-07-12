@@ -50,7 +50,7 @@ class PlotWidget(QWidget):
 
         # Lower PID error
         error = gyro - setpoint
-        canvas.ax_bottom.plot(time, error, label="Tracking Error - Setpoint - Gyro",
+        canvas.ax_bottom.plot(time, error, label="Tracking Error = Setpoint - Gyro",
                               color=AppStyles.RED, linewidth=1.2)
         canvas.ax_bottom.set_title(f"{axis_name} — PID Error")
         canvas.ax_bottom.set_xlabel("Time (s)")

@@ -1,6 +1,7 @@
 #.GITIGNORE
 # MAIN FILES
 .venv/
+.env
 
 #PYTHON CACHE AND IDE FILES
 __pycache__/

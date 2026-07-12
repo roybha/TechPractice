@@ -11,7 +11,7 @@ from gui.widgets.profile_widget import ProfileWidget
 from gui.widgets.plot_widget import PlotWidget
 from gui.widgets.fft_plot_widget import FFTPlotWidget
 from gui.widgets.results_widget import ResultsWidget
-
+from database.db_manager import DBManager
 
 class MainWindow(QMainWindow):
     """
@@ -33,6 +33,7 @@ class MainWindow(QMainWindow):
 
         self._parser = LogParser()
         self._engine = TuningEngine()
+        self._db = DBManager()
 
         self._build_ui()
         self._connect_signals()
@@ -101,8 +102,10 @@ class MainWindow(QMainWindow):
         try:
             result = self._run_analysis(filepath)
             self._display_result(result)
+            profile = self.profile_widget.get_profile()
+            session_id = self._db.save_analysis(result, profile)
             self._set_status(
-                f"ANALYSIS COMPLETE  —  Score: {result.overall_quality_score:.0f}/100",
+                f"ANALYSIS COMPLETE  —  Score: {result.overall_quality_score:.0f}/100 | Saved DB ID: {session_id}",
                 AppStyles.GREEN,
             )
         except FileNotFoundError as e:

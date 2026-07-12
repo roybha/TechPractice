@@ -24,8 +24,6 @@ class PIDAnalyzer:
     P_OSC_MAX_HZ = 50.0  # 10–50 Hz peak → P too high
     D_OSC_MIN_HZ = 50.0  # 50–400 Hz peak → D too high / needs filter
 
-    # ── Public ──────────────────────────────────────────────────────
-
     def analyze_axis(
             self,
             axis_name: str,
@@ -63,8 +61,6 @@ class PIDAnalyzer:
             osc=osc,
             osc_freq=osc_freq,
         )
-
-    # ── Private ──────────────────────────────────────────────────────
 
     @staticmethod
     def _get_dt(timestamp: np.ndarray) -> float:
@@ -188,8 +184,6 @@ class PIDAnalyzer:
         is_osc = peak_power > self.OSCILLATION_SNR * float(np.mean(psd_b))
 
         return is_osc, (peak_freq if is_osc else 0.0)
-
-    # ── Assessment ───────────────────────────────────────────────────
 
     def _assess_p(self, overshoot: float, osc: bool, osc_freq: float) -> str:
         if osc and self.MIN_OSC_FREQ <= osc_freq <= self.P_OSC_MAX_HZ:
