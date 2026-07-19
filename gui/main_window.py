@@ -27,7 +27,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("PID Analyzer")
+        self.setWindowTitle("FlightLog Analyzer")
         self.showMaximized()
         self.setMinimumSize(1100, 700)
 
